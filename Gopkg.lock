@@ -3,15 +3,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/lxn/walk"
-  packages = [
-    ".",
-    "declarative"
-  ]
-  revision = "02935bac0ab8448d5f9bf72ebeeb7ca0d5553f9b"
-
-[[projects]]
-  branch = "master"
   name = "github.com/lxn/win"
   packages = ["."]
   revision = "7e1250ba2e7749fb9eb865da9ee93fb5a2fe73f1"
@@ -25,6 +16,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6b6b0996b8fadf80723ba9edf28e40b54bbb8dd92fa2f5168fd92fe6a084fff5"
+  inputs-digest = "35a1b5c626e30038f03ad9a15ab07cb71c8f2fd04145eeba8a7906fffc79c367"
   solver-name = "gps-cdcl"
   solver-version = 1
