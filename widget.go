@@ -129,7 +129,7 @@ func (wb *WidgetBase) init(widget Widget) error {
 			return wb.window.(Widget).ToolTipText()
 		},
 		func(v interface{}) error {
-			wb.window.(Widget).SetToolTipText(v.(string))
+			wb.window.(Widget).SetToolTipText(assertStringOr(v, ""))
 			return nil
 		},
 		wb.toolTipTextChangedPublisher.Event())
@@ -330,6 +330,20 @@ func (wb *WidgetBase) SetParent(parent Container) (err error) {
 	return nil
 }
 
+func (wb *WidgetBase) ForEachAncestor(f func(window Window) bool) {
+	hwnd := win.GetParent(wb.hWnd)
+
+	for hwnd != 0 {
+		if window := windowFromHandle(hwnd); window != nil {
+			if !f(window) {
+				return
+			}
+		}
+
+		hwnd = win.GetParent(hwnd)
+	}
+}
+
 // SizeHint returns a default Size that should be "overidden" by a concrete
 // Widget type.
 func (wb *WidgetBase) SizeHint() Size {
@@ -377,10 +391,6 @@ func (wb *WidgetBase) onClearedGraphicsEffects() error {
 
 func (wb *WidgetBase) invalidateBorderInParent() {
 	if wb.parent != nil && wb.parent.Layout() != nil {
-		//if _, ok := wb.parent.(*Splitter); ok {
-		//	return
-		//}
-
 		b := wb.Bounds().toRECT()
 		s := int32(wb.parent.Layout().Spacing())
 
@@ -398,6 +408,24 @@ func (wb *WidgetBase) invalidateBorderInParent() {
 		rc = win.RECT{Left: b.Left, Top: b.Bottom, Right: b.Right, Bottom: b.Bottom + s}
 		win.InvalidateRect(hwnd, &rc, true)
 	}
+}
+
+func (wb *WidgetBase) hasComplexBackground() bool {
+	if bg := wb.window.Background(); bg != nil && !bg.simple() {
+		return false
+	}
+
+	var complex bool
+	wb.ForEachAncestor(func(window Window) bool {
+		if bg := window.Background(); bg != nil && !bg.simple() {
+			complex = true
+			return false
+		}
+
+		return true
+	})
+
+	return complex
 }
 
 func (wb *WidgetBase) updateParentLayout() error {

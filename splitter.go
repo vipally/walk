@@ -33,6 +33,7 @@ type Splitter struct {
 	mouseDownPos  Point
 	draggedHandle *splitterHandle
 	persistent    bool
+	removing      bool
 }
 
 func newSplitter(parent Container, orientation Orientation) (*Splitter, error) {
@@ -84,7 +85,7 @@ func NewVSplitter(parent Container) (*Splitter, error) {
 }
 
 func (s *Splitter) LayoutFlags() LayoutFlags {
-	return ShrinkableHorz | ShrinkableVert | GrowableHorz | GrowableVert | GreedyHorz | GreedyVert
+	return s.layout.LayoutFlags()
 }
 
 func (s *Splitter) SizeHint() Size {
@@ -201,7 +202,12 @@ func (s *Splitter) SaveState() error {
 			buf.WriteString(" ")
 		}
 
-		buf.WriteString(strconv.FormatInt(int64(layout.hwnd2Item[s.children.At(i).Handle()].size), 10))
+		item := layout.hwnd2Item[s.children.At(i).Handle()]
+		size := item.oldExplicitSize
+		if size == 0 {
+			size = item.size
+		}
+		buf.WriteString(strconv.FormatInt(int64(size), 10))
 	}
 
 	s.WriteState(buf.String())
@@ -262,7 +268,9 @@ func (s *Splitter) RestoreState() error {
 				size = int(float64(regularSpace) * fraction)
 			}
 
-			layout.hwnd2Item[widget.Handle()].size = size
+			item := layout.hwnd2Item[widget.Handle()]
+			item.size = size
+			item.oldExplicitSize = size
 		}
 
 		if persistable, ok := widget.(Persistable); ok {
@@ -471,8 +479,14 @@ func (s *Splitter) onInsertedWidget(index int, widget Widget) (err error) {
 						}
 
 						layout := s.Layout().(*splitterLayout)
-						layout.hwnd2Item[prev.Handle()].size = sizePrev
-						layout.hwnd2Item[next.Handle()].size = sizeNext
+
+						prevItem := layout.hwnd2Item[prev.Handle()]
+						prevItem.size = sizePrev
+						prevItem.oldExplicitSize = sizePrev
+
+						nextItem := layout.hwnd2Item[next.Handle()]
+						nextItem.size = sizeNext
+						nextItem.oldExplicitSize = sizeNext
 					})
 				}
 			}()
@@ -496,7 +510,7 @@ func (s *Splitter) onRemovedWidget(index int, widget Widget) (err error) {
 	}()
 
 	_, isHandle := widget.(*splitterHandle)
-	if isHandle && s.children.Len()%2 == 1 {
+	if !s.removing && isHandle && s.children.Len()%2 == 1 {
 		return newError("cannot remove splitter handle")
 	}
 
@@ -512,14 +526,22 @@ func (s *Splitter) onRemovedWidget(index int, widget Widget) (err error) {
 			} else {
 				handleIndex = index - 1
 			}
-			err = s.children.RemoveAt(handleIndex)
+
+			s.removing = true
+			handle := s.children.items[handleIndex]
+			if err = handle.SetParent(nil); err == nil {
+				s.children.items = append(s.children.items[:index], s.children.items[index+1:]...)
+
+				s.layout.Update(true)
+
+				handle.Dispose()
+			}
+
+			s.removing = false
 		}()
 	}
 
 	err = s.ContainerBase.onRemovedWidget(index, widget)
-	if isHandle && err == nil {
-		widget.Dispose()
-	}
 
 	return
 }

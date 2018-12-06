@@ -55,7 +55,7 @@ func NewTextEditWithStyle(parent Container, style uint32) (*TextEdit, error) {
 			return te.Text()
 		},
 		func(v interface{}) error {
-			return te.SetText(v.(string))
+			return te.SetText(assertStringOr(v, ""))
 		},
 		te.textChangedPublisher.Event()))
 
@@ -105,6 +105,10 @@ func (te *TextEdit) Alignment() Alignment1D {
 }
 
 func (te *TextEdit) SetAlignment(alignment Alignment1D) error {
+	if alignment == AlignDefault {
+		alignment = AlignNear
+	}
+
 	var bit uint32
 
 	switch alignment {

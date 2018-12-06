@@ -67,7 +67,7 @@ func newLineEdit(parent Window) (*LineEdit, error) {
 			return le.Text()
 		},
 		func(v interface{}) error {
-			return le.SetText(v.(string))
+			return le.SetText(assertStringOr(v, ""))
 		},
 		le.textChangedPublisher.Event()))
 
@@ -157,6 +157,10 @@ func (le *LineEdit) Alignment() Alignment1D {
 }
 
 func (le *LineEdit) SetAlignment(alignment Alignment1D) error {
+	if alignment == AlignDefault {
+		alignment = AlignNear
+	}
+
 	var bit uint32
 
 	switch alignment {

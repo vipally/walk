@@ -1,4 +1,4 @@
-// Copyright 2012 The Walk Authors. All rights reserved.
+// Copyright 2018 The Walk Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -10,7 +10,7 @@ import (
 	"github.com/lxn/walk"
 )
 
-type NumberEdit struct {
+type DateLabel struct {
 	// Window
 
 	Background         Brush
@@ -43,56 +43,34 @@ type NumberEdit struct {
 	RowSpan            int
 	StretchFactor      int
 
-	// NumberEdit
+	// static
 
-	AssignTo       **walk.NumberEdit
-	Decimals       int
-	Increment      float64
-	MaxValue       float64
-	MinValue       float64
-	Prefix         Property
-	OnValueChanged walk.EventHandler
-	ReadOnly       Property
-	Suffix         Property
-	TextColor      walk.Color
-	Value          Property
+	TextColor walk.Color
+
+	// DateLabel
+
+	AssignTo      **walk.DateLabel
+	Date          Property
+	Format        Property
+	TextAlignment Alignment1D
 }
 
-func (ne NumberEdit) Create(builder *Builder) error {
-	w, err := walk.NewNumberEdit(builder.Parent())
+func (dl DateLabel) Create(builder *Builder) error {
+	w, err := walk.NewDateLabel(builder.Parent())
 	if err != nil {
 		return err
 	}
 
-	if ne.AssignTo != nil {
-		*ne.AssignTo = w
+	if dl.AssignTo != nil {
+		*dl.AssignTo = w
 	}
 
-	return builder.InitWidget(ne, w, func() error {
-		w.SetTextColor(ne.TextColor)
-
-		if err := w.SetDecimals(ne.Decimals); err != nil {
+	return builder.InitWidget(dl, w, func() error {
+		if err := w.SetTextAlignment(walk.Alignment1D(dl.TextAlignment)); err != nil {
 			return err
 		}
 
-		inc := ne.Increment
-		if inc <= 0 {
-			inc = 1
-		}
-
-		if err := w.SetIncrement(inc); err != nil {
-			return err
-		}
-
-		if ne.MinValue != 0 || ne.MaxValue != 0 {
-			if err := w.SetRange(ne.MinValue, ne.MaxValue); err != nil {
-				return err
-			}
-		}
-
-		if ne.OnValueChanged != nil {
-			w.ValueChanged().Attach(ne.OnValueChanged)
-		}
+		w.SetTextColor(dl.TextColor)
 
 		return nil
 	})
