@@ -9,8 +9,8 @@ import (
 )
 
 import (
-	"github.com/lxn/walk"
-	. "github.com/lxn/walk/declarative"
+	"github.com/vipally/walk"
+	. "github.com/vipally/walk/declarative"
 )
 
 var isSpecialMode = walk.NewMutableCondition()
